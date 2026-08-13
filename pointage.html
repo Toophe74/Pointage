@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pointage">
+<title>Pointage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f151c;
+    --surface:#19222c;
+    --surface-2:#212c38;
+    --border:#2a3644;
+    --text:#eef2f6;
+    --text-muted:#8fa0b3;
+    --gold:#d9a441;
+    --teal:#4fb8ab;
+    --violet:#8f7fe8;
+    --danger:#d1495b;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);}
+  body{
+    font-family:'Inter', -apple-system, system-ui, sans-serif;
+    font-size:15px;
+    line-height:1.4;
+    overscroll-behavior-y: none;
+    padding-bottom: calc(var(--safe-bottom) + 8px);
+  }
+  h1,h2,h3, .display{
+    font-family:'Space Grotesk', 'Inter', sans-serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  .mono{ font-family:'IBM Plex Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  input, select, button{ font-family: inherit; color: inherit; }
+  ::selection{ background: var(--violet); color:#fff; }
+
+  /* ---- Header & Tabs ---- */
+  header.topbar{
+    position: sticky; top:0; z-index: 40;
+    background: rgba(15,21,28,0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding-top: var(--safe-top);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 16px 4px;
+  }
+  .brand-row h1{ font-size: 19px; }
+  .brand-row h1 span{ color: var(--gold); }
+  .tabs{
+    display:flex; gap:2px; padding: 6px 10px 10px; overflow-x:auto;
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab-btn{
+    appearance:none; border:none; background:transparent; color:var(--text-muted);
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13px;
+    padding:8px 13px; border-radius:20px; white-space:nowrap; cursor:pointer;
+    transition: background .15s, color .15s;
+  }
+  .tab-btn.active{ background: var(--surface-2); color: var(--text); }
+  .tab-btn:active{ transform: scale(0.97); }
+
+  main{ padding: 14px 14px 100px; max-width: 560px; margin:0 auto; }
+
+  /* ---- Nav (week/month switcher) ---- */
+  .nav-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding: 10px 6px; margin-bottom: 14px;
+  }
+  .nav-row button.arrow{
+    appearance:none; border:none; background:var(--surface-2); color:var(--text);
+    width:38px; height:38px; border-radius:10px; font-size:18px; cursor:pointer;
+  }
+  .nav-row button.arrow:active{ background: var(--violet); }
+  .nav-center{ text-align:center; }
+  .nav-center .big{ font-size:15px; font-weight:600; font-family:'Space Grotesk',sans-serif; }
+  .nav-center .small{ font-size:12px; color:var(--text-muted); margin-top:1px; }
+  .nav-center button.today-link{
+    background:none;border:none;color:var(--teal);font-size:11px;font-family:inherit;
+    margin-top:2px; cursor:pointer; padding:2px 6px;
+  }
+
+  /* ---- Vacation toggle ---- */
+  .vac-toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding: 12px 14px; margin-bottom: 14px;
+  }
+  .vac-toggle .label{ font-size: 13.5px; }
+  .vac-toggle .label small{ display:block; color:var(--text-muted); font-size:11.5px; margin-top:2px; }
+  .switch{ position:relative; width:46px; height:27px; flex-shrink:0; margin-left:12px; }
+  .switch input{ opacity:0; width:100%; height:100%; margin:0; position:absolute; z-index:2; cursor:pointer; }
+  .switch .track{
+    position:absolute; inset:0; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:20px; transition: background .15s;
+  }
+  .switch .thumb{
+    position:absolute; top:3px; left:3px; width:19px; height:19px; border-radius:50%;
+    background: var(--text-muted); transition: transform .15s, background .15s;
+  }
+  .switch input:checked + .track{ background: rgba(143,127,232,0.35); border-color: var(--violet); }
+  .switch input:checked + .track + .thumb{ transform: translateX(19px); background: var(--violet); }
+
+  /* ---- Day cards ---- */
+  .day-card{
+    background: var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .day-card.today{ border-color: var(--gold); }
+  .day-card.disabled{ opacity: .45; pointer-events:none; }
+  .day-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px; }
+  .day-head .dname{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14.5px; }
+  .day-head .ddate{ color:var(--text-muted); font-size:12px; }
+  .row2{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:8px; }
+  .field{ display:flex; flex-direction:column; gap:4px; }
+  .field label{ font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.04em; }
+  .field input[type=time], .field input[type=number], .field textarea{
+    background: var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:9px; padding:8px 9px; font-size:14.5px; width:100%;
+  }
+  .field input[type=time]{ font-family:'IBM Plex Mono', monospace; }
+  .field input:focus, .field textarea:focus{ outline:none; border-color: var(--teal); }
+  .field textarea{ font-family:'Inter',sans-serif; resize:none; min-height:36px; line-height:1.35; }
+  .subgroup-label{ font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin: 2px 0 5px; }
+  .day-results{
+    display:flex; gap:8px; margin-top:6px; padding-top:9px; border-top: 1px dashed var(--border);
+  }
+  .chip{
+    flex:1; background: var(--surface-2); border-radius:10px; padding:7px 8px; text-align:center;
+  }
+  .chip .v{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:14px; }
+  .chip .l{ font-size:9.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.03em; margin-top:2px; }
+  .chip.teal .v{ color:var(--teal); }
+  .chip.violet .v{ color:var(--violet); }
+  .chip.gold .v{ color:var(--gold); }
+
+  /* ---- Odometer summary ---- */
+  .summary-block{
+    background: var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding: 16px; margin-bottom:14px;
+  }
+  .summary-title{ font-size:11.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .odo-row{ display:flex; gap:10px; }
+  .odo-group{ flex:1; }
+  .odo-group .glabel{ font-size:11px; color:var(--text-muted); margin-bottom:6px; }
+  .odo-digits{ display:flex; gap:2px; flex-wrap:wrap; }
+  .odo-digit{
+    background: var(--surface-2); border:1px solid var(--border); border-radius:5px;
+    min-width:17px; text-align:center; padding:5px 2px;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:16px;
+    color: var(--text);
+  }
+  .odo-digit.sep{ background:transparent; border:none; color:var(--text-muted); min-width:8px; padding:5px 0; }
+  .odo-group.gold .odo-digit{ color: var(--gold); border-color: rgba(217,164,65,.35); }
+  .odo-group.teal .odo-digit{ color: var(--teal); border-color: rgba(79,184,171,.35); }
+
+  /* ---- Month table ---- */
+  .week-line{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background: var(--surface); border:1px solid var(--border); border-radius:13px;
+    padding:11px 13px; margin-bottom:8px; cursor:pointer;
+  }
+  .week-line:active{ background: var(--surface-2); }
+  .week-line .wl-left .wnum{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13.5px; }
+  .week-line .wl-left .wrange{ font-size:11px; color:var(--text-muted); margin-top:1px; }
+  .week-line .wl-right{ text-align:right; }
+  .week-line .wl-right .h{ font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:var(--teal); }
+  .week-line .wl-right .m{ font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:var(--gold); margin-top:1px; }
+  .week-line.vac{ border-color: rgba(143,127,232,.5); }
+  .week-line.vac .wl-left .wnum::after{ content:" · vacances"; color:var(--violet); font-weight:500; font-size:11px; }
+
+  /* ---- History ---- */
+  .hist-line{
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--surface); border:1px solid var(--border); border-radius:13px;
+    padding:13px 15px; margin-bottom:9px; cursor:pointer;
+  }
+  .hist-line:active{ background: var(--surface-2); }
+  .hist-line .hmonth{ font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14.5px; text-transform:capitalize; }
+  .hist-line .hsub{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+  .hist-line .hright{ text-align:right; }
+  .hist-line .hright .v{ font-family:'IBM Plex Mono',monospace; font-size:15px; color:var(--gold); font-weight:600; }
+
+  /* ---- Settings ---- */
+  .settings-group{
+    background: var(--surface); border:1px solid var(--border); border-radius:16px;
+    padding:14px; margin-bottom:14px;
+  }
+  .settings-group h3{ font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:11px; }
+  .settings-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .settings-row:last-child{ margin-bottom:0; }
+  .settings-row label{ font-size:13.5px; flex:1; }
+  .settings-row input[type=text], .settings-row input[type=number]{
+    background: var(--surface-2); border:1px solid var(--border); color:var(--text);
+    border-radius:9px; padding:8px 10px; font-size:14px; width:110px; text-align:right;
+  }
+  .settings-row input[type=text].wide{ width:170px; text-align:left; }
+  .settings-row input:focus{ outline:none; border-color: var(--teal); }
+  .btn{
+    appearance:none; border:1px solid var(--border); background: var(--surface-2); color:var(--text);
+    border-radius:11px; padding:11px 14px; font-size:13.5px; font-weight:600; width:100%;
+    font-family:'Space Grotesk',sans-serif; cursor:pointer; margin-top:6px;
+  }
+  .btn.danger{ color: var(--danger); border-color: rgba(209,73,91,.4); }
+  .btn:active{ transform: scale(.98); }
+  .hint{ font-size:11.5px; color:var(--text-muted); margin-top:8px; line-height:1.5; }
+
+  .empty{ text-align:center; padding: 50px 20px; color: var(--text-muted); }
+  .empty .big-emoji{ font-size:34px; margin-bottom:10px; }
+
+  .pause-rules{ font-size:11px; color:var(--text-muted); margin-top:2px; }
+  .pause-rules b{ color: var(--text); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand-row">
+    <h1>Point<span>age</span></h1>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn" data-tab="semaine">Semaine</button>
+    <button class="tab-btn" data-tab="mois">Mois</button>
+    <button class="tab-btn" data-tab="historique">Historique</button>
+    <button class="tab-btn" data-tab="reglages">Réglages</button>
+  </nav>
+</header>
+
+<main id="main"></main>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ CONSTANTES ============ */
+var STORAGE_KEY = "pointage-app-data-v1";
+var JOURS = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+/* ============ DONNEES ============ */
+function defaultData(){
+  return {
+    settings: {
+      rate: 20,
+      currency: "€",
+      vacationHoursPerDay: 8 + 20/60,
+      workDaysPerWeek: 5,
+      labels: {
+        prevu: "Heures prévisionnelles",
+        effectif: "Heures effectuées",
+        montant: "Montant"
+      }
+    },
+    weeks: {} // key: iso week key "2026-W33" -> { isVacation: bool, days: { "2026-08-10": {debut,fin,prevu} } }
+  };
+}
+
+var data = loadData();
+
+function loadData(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    var parsed = JSON.parse(raw);
+    var d = defaultData();
+    d.settings = Object.assign(d.settings, parsed.settings || {});
+    d.settings.labels = Object.assign(d.settings.labels, (parsed.settings && parsed.settings.labels) || {});
+    // migration : ancienne moyenne hebdomadaire -> moyenne par jour travaillé
+    if(parsed.settings && parsed.settings.vacationAvgHours && !(parsed.settings.vacationHoursPerDay)){
+      d.settings.vacationHoursPerDay = parsed.settings.vacationAvgHours / (d.settings.workDaysPerWeek || 5);
+    }
+    d.weeks = parsed.weeks || {};
+    return d;
+  }catch(e){
+    console.error("Erreur de lecture des données", e);
+    return defaultData();
+  }
+}
+
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }catch(e){
+    console.error("Erreur de sauvegarde", e);
+    alert("Impossible d'enregistrer les données sur cet appareil.");
+  }
+}
+
+function getWeek(key){
+  if(!data.weeks[key]) data.weeks[key] = { isVacation:false, days:{} };
+  return data.weeks[key];
+}
+function getDay(weekKey, dateKey){
+  var w = getWeek(weekKey);
+  if(!w.days[dateKey]) w.days[dateKey] = { debut:"", fin:"", prevuDebut:"", prevuFin:"", note:"" };
+  return w.days[dateKey];
+}
+
+/* ============ DATES / SEMAINES ============ */
+function toDateKey(d){
+  return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+}
+function pad(n){ return String(n).padStart(2,"0"); }
+
+function getMonday(d){
+  var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  var day = (date.getDay()+6)%7; // 0 = lundi
+  date.setDate(date.getDate()-day);
+  return date;
+}
+function addDays(d,n){ var r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function addWeeks(d,n){ return addDays(d, n*7); }
+
+function isoWeekKey(monday){
+  // monday = début de semaine (lundi). On utilise le jeudi pour déterminer année ISO + numéro.
+  var thursday = addDays(monday, 3);
+  var utcThu = new Date(Date.UTC(thursday.getFullYear(), thursday.getMonth(), thursday.getDate()));
+  var firstThursday = new Date(Date.UTC(utcThu.getUTCFullYear(),0,4));
+  var fdDay = (firstThursday.getUTCDay()+6)%7;
+  firstThursday.setUTCDate(firstThursday.getUTCDate()-fdDay+3);
+  var week = 1 + Math.round((utcThu - firstThursday) / (7*86400000));
+  return utcThu.getUTCFullYear() + "-W" + pad(week);
+}
+
+function monthKeyForWeek(monday){
+  var thursday = addDays(monday,3); // le mois "dominant" de la semaine
+  return thursday.getFullYear() + "-" + pad(thursday.getMonth()+1);
+}
+function monthKeyOf(date){ return date.getFullYear() + "-" + pad(date.getMonth()+1); }
+
+function fmtDateShort(d){
+  return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit'});
+}
+function fmtDateLong(d){
+  return d.toLocaleDateString('fr-FR', {day:'numeric', month:'long', year:'numeric'});
+}
+
+/* ============ CALCULS HEURES / PAUSE ============ */
+function timeToHours(t){
+  if(!t) return null;
+  var parts = t.split(":");
+  if(parts.length<2) return null;
+  return parseInt(parts[0],10) + parseInt(parts[1],10)/60;
+}
+
+function pauseMinutes(grossHours){
+  if(grossHours > 9) return 60;
+  if(grossHours >= 7) return 30;
+  if(grossHours >= 5) return 15;
+  return 0;
+}
+
+// Retourne {gross, pauseMin, net} ou null si incomplet. debutStr/finStr = "HH:MM"
+function computeRange(debutStr, finStr){
+  if(!debutStr || !finStr) return null;
+  var h1 = timeToHours(debutStr);
+  var h2 = timeToHours(finStr);
+  if(h1===null || h2===null) return null;
+  var gross = h2 - h1;
+  if(gross <= 0) gross += 24;
+  var pMin = pauseMinutes(gross);
+  var net = Math.max(0, gross - pMin/60);
+  return { gross:gross, pauseMin:pMin, net:net };
+}
+function computeDay(day){
+  if(!day) return null;
+  return computeRange(day.debut, day.fin);
+}
+function computePrevu(day){
+  if(!day) return null;
+  // rétro-compatibilité : anciennes semaines avec un nombre d'heures prévu saisi directement
+  if((!day.prevuDebut || !day.prevuFin) && day.prevu){
+    return { gross: Number(day.prevu), pauseMin:0, net: Number(day.prevu) };
+  }
+  return computeRange(day.prevuDebut, day.prevuFin);
+}
+
+function hoursLabel(h){
+  if(h===null || h===undefined || isNaN(h)) return "—";
+  var sign = h<0 ? "-" : "";
+  h = Math.abs(h);
+  var hh = Math.floor(h);
+  var mm = Math.round((h-hh)*60);
+  if(mm===60){ hh+=1; mm=0; }
+  return sign + hh + "h" + pad(mm);
+}
+function moneyLabel(v){
+  if(v===null || v===undefined || isNaN(v)) return "—";
+  return v.toFixed(2).replace(".", ",") + " " + data.settings.currency;
+}
+
+/* ============ TOTALS SEMAINE ============ */
+function weekTotals(weekKey, monday){
+  var w = getWeek(weekKey);
+  var rate = data.settings.rate;
+  if(w.isVacation){
+    var vh = (data.settings.vacationHoursPerDay || 0) * (data.settings.workDaysPerWeek || 0);
+    return { prevu: vh, effectif: vh, montant: vh*rate, pauseMin: 0 };
+  }
+  var totals = { prevu:0, effectif:0, montant:0, pauseMin:0 };
+  for(var i=0;i<7;i++){
+    var dk = toDateKey(addDays(monday,i));
+    var day = w.days[dk];
+    if(!day) continue;
+    var cp = computePrevu(day);
+    if(cp) totals.prevu += cp.net;
+    var c = computeDay(day);
+    if(c){
+      totals.effectif += c.net;
+      totals.pauseMin += c.pauseMin;
+      totals.montant += c.net*rate;
+    }
+  }
+  return totals;
+}
+
+/* ============ ETAT UI ============ */
+var state = {
+  tab: "semaine",
+  weekMonday: getMonday(new Date()),
+  monthDate: new Date()
+};
+
+/* ============ RENDER: TABS ============ */
+function renderTabs(){
+  var btns = document.querySelectorAll(".tab-btn");
+  btns.forEach(function(b){
+    b.classList.toggle("active", b.dataset.tab === state.tab);
+  });
+}
+document.getElementById("tabs").addEventListener("click", function(e){
+  var btn = e.target.closest(".tab-btn");
+  if(!btn) return;
+  state.tab = btn.dataset.tab;
+  render();
+});
+
+/* ============ RENDER: SEMAINE ============ */
+function renderSemaine(){
+  var monday = state.weekMonday;
+  var weekKey = isoWeekKey(monday);
+  var w = getWeek(weekKey);
+  var sunday = addDays(monday,6);
+  var todayKey = toDateKey(new Date());
+  var labels = data.settings.labels;
+
+  var html = "";
+  html += navRow(
+    "Semaine " + weekKey.split("-W")[1],
+    fmtDateShort(monday) + " → " + fmtDateShort(sunday) + " " + monday.getFullYear(),
+    "prevWeek", "nextWeek", "todayWeek"
+  );
+
+  html += '<div class="vac-toggle">';
+  var vacWeekTotal = (data.settings.vacationHoursPerDay||0) * (data.settings.workDaysPerWeek||0);
+  html += '  <div class="label">Semaine de vacances<small>Remplace les jours par ' + hoursLabel(data.settings.vacationHoursPerDay) + '/jour × ' + data.settings.workDaysPerWeek + ' j. = ' + hoursLabel(vacWeekTotal) + '</small></div>';
+  html += '  <label class="switch"><input type="checkbox" id="vacToggle" ' + (w.isVacation?"checked":"") + '><span class="track"></span><span class="thumb"></span></label>';
+  html += '</div>';
+
+  if(w.isVacation){
+    html += '<div class="summary-block"><div class="summary-title">Semaine de vacances</div>';
+    html += '<div class="hint">Cette semaine est comptée automatiquement pour <b class="mono">' + hoursLabel(vacWeekTotal) + '</b> et <b class="mono">' + moneyLabel(vacWeekTotal*data.settings.rate) + '</b>. Modifiable dans Réglages.</div></div>';
+  } else {
+    for(var i=0;i<7;i++){
+      var d = addDays(monday,i);
+      var dk = toDateKey(d);
+      var day = getDay(weekKey, dk);
+      var c = computeDay(day);
+      var cp = computePrevu(day);
+      var isToday = dk===todayKey;
+      html += '<div class="day-card' + (isToday?" today":"") + '" data-date="' + dk + '">';
+      html += '  <div class="day-head"><span class="dname">' + JOURS[i] + '</span><span class="ddate">' + fmtDateShort(d) + '</span></div>';
+      html += '  <div class="subgroup-label">' + escapeHtml(labels.prevu) + '</div>';
+      html += '  <div class="row2">';
+      html += '    <div class="field"><label>Début prévu</label><input type="time" class="in-prevu-debut" value="' + (day.prevuDebut||"") + '"></div>';
+      html += '    <div class="field"><label>Fin prévue</label><input type="time" class="in-prevu-fin" value="' + (day.prevuFin||"") + '"></div>';
+      html += '  </div>';
+      html += '  <div class="subgroup-label">' + escapeHtml(labels.effectif) + '</div>';
+      html += '  <div class="row2">';
+      html += '    <div class="field"><label>Début</label><input type="time" class="in-debut" value="' + (day.debut||"") + '"></div>';
+      html += '    <div class="field"><label>Fin</label><input type="time" class="in-fin" value="' + (day.fin||"") + '"></div>';
+      html += '  </div>';
+      html += '  <div class="field"><label>Note</label><textarea class="in-note" rows="1" placeholder="Rendez-vous, absence, remarque…">' + escapeHtml(day.note||"") + '</textarea></div>';
+      html += '  <div class="day-results">';
+      html += '    <div class="chip teal"><div class="v mono">' + (cp?hoursLabel(cp.net):"—") + '</div><div class="l">Prévu</div></div>';
+      html += '    <div class="chip violet"><div class="v mono">' + (c?hoursLabel(c.net):"—") + '</div><div class="l">Effectif</div></div>';
+      html += '    <div class="chip"><div class="v mono">' + (c?c.pauseMin+" min":"—") + '</div><div class="l">Pause</div></div>';
+      html += '    <div class="chip gold"><div class="v mono">' + (c?moneyLabel(c.net*data.settings.rate):"—") + '</div><div class="l">Gagné</div></div>';
+      html += '  </div>';
+      html += '</div>';
+    }
+    html += '<div class="pause-rules">Pause auto (début/fin prévu ou effectif) — <b>5h</b> travaillées : 15 min · <b>7h</b> : 30 min · <b>+9h</b> : 1h</div>';
+  }
+
+  var t = weekTotals(weekKey, monday);
+  html += '<div class="summary-block" style="margin-top:16px;">';
+  html += '  <div class="summary-title">Total de la semaine</div>';
+  html += odoRow([
+    {label: escapeHtml(labels.effectif), value: hoursLabel(t.effectif), cls:"teal"},
+    {label: escapeHtml(labels.montant), value: moneyLabel(t.montant), cls:"gold"}
+  ]);
+  html += '</div>';
+
+  document.getElementById("main").innerHTML = html;
+
+  document.getElementById("prevWeek").onclick = function(){ state.weekMonday = addWeeks(state.weekMonday,-1); render(); };
+  document.getElementById("nextWeek").onclick = function(){ state.weekMonday = addWeeks(state.weekMonday,1); render(); };
+  document.getElementById("todayWeek").onclick = function(){ state.weekMonday = getMonday(new Date()); render(); };
+
+  document.getElementById("vacToggle").onchange = function(e){
+    w.isVacation = e.target.checked;
+    saveData();
+    render();
+  };
+
+  document.querySelectorAll(".day-card").forEach(function(card){
+    var dk = card.dataset.date;
+    var day = getDay(weekKey, dk);
+    var debutEl = card.querySelector(".in-debut");
+    var finEl = card.querySelector(".in-fin");
+    var prevuDebutEl = card.querySelector(".in-prevu-debut");
+    var prevuFinEl = card.querySelector(".in-prevu-fin");
+    var noteEl = card.querySelector(".in-note");
+    if(debutEl) debutEl.onchange = function(e){ day.debut = e.target.value; saveData(); renderSemaine(); };
+    if(finEl) finEl.onchange = function(e){ day.fin = e.target.value; saveData(); renderSemaine(); };
+    if(prevuDebutEl) prevuDebutEl.onchange = function(e){ day.prevuDebut = e.target.value; saveData(); renderSemaine(); };
+    if(prevuFinEl) prevuFinEl.onchange = function(e){ day.prevuFin = e.target.value; saveData(); renderSemaine(); };
+    if(noteEl) noteEl.onchange = function(e){ day.note = e.target.value; saveData(); };
+  });
+}
+
+/* ============ RENDER: MOIS ============ */
+function renderMois(){
+  var monthDate = state.monthDate;
+  var mk = monthKeyOf(monthDate);
+  var monthLabel = MOIS[monthDate.getMonth()] + " " + monthDate.getFullYear();
+
+  var html = "";
+  html += navRow(capitalize(monthLabel), "", "prevMonth", "nextMonth", "todayMonth");
+
+  // trouver toutes les semaines rattachées à ce mois (par jeudi)
+  var monday = getMonday(new Date(monthDate.getFullYear(), monthDate.getMonth(), 1));
+  monday = addWeeks(monday, -1); // marge de sécurité avant le mois
+  var weeksInMonth = [];
+  for(var i=0;i<8;i++){
+    var mondayI = addWeeks(monday, i);
+    if(monthKeyForWeek(mondayI) === mk){
+      weeksInMonth.push(mondayI);
+    }
+  }
+
+  var totalPrevu=0, totalEffectif=0, totalMontant=0;
+
+  if(weeksInMonth.length===0){
+    html += '<div class="empty"><div class="big-emoji">🗓️</div>Aucune semaine pour ce mois.</div>';
+  } else {
+    weeksInMonth.forEach(function(mon){
+      var wk = isoWeekKey(mon);
+      var w = getWeek(wk);
+      var t = weekTotals(wk, mon);
+      totalPrevu += t.prevu; totalEffectif += t.effectif; totalMontant += t.montant;
+      var sun = addDays(mon,6);
+      html += '<div class="week-line' + (w.isVacation?" vac":"") + '" data-monday="' + toDateKey(mon) + '">';
+      html += '  <div class="wl-left"><div class="wnum">Semaine ' + wk.split("-W")[1] + '</div><div class="wrange">' + fmtDateShort(mon) + ' – ' + fmtDateShort(sun) + '</div></div>';
+      html += '  <div class="wl-right"><div class="h mono">' + hoursLabel(t.effectif) + '</div><div class="m mono">' + moneyLabel(t.montant) + '</div></div>';
+      html += '</div>';
+    });
+  }
+
+  html += '<div class="summary-block" style="margin-top:10px;">';
+  html += '  <div class="summary-title">Total du mois</div>';
+  html += odoRow([
+    {label: escapeHtml(data.settings.labels.effectif), value: hoursLabel(totalEffectif), cls:"teal"},
+    {label: escapeHtml(data.settings.labels.montant), value: moneyLabel(totalMontant), cls:"gold"}
+  ]);
+  html += '</div>';
+
+  document.getElementById("main").innerHTML = html;
+  document.getElementById("prevMonth").onclick = function(){
+    state.monthDate = new Date(state.monthDate.getFullYear(), state.monthDate.getMonth()-1, 1);
+    render();
+  };
+  document.getElementById("nextMonth").onclick = function(){
+    state.monthDate = new Date(state.monthDate.getFullYear(), state.monthDate.getMonth()+1, 1);
+    render();
+  };
+  document.getElementById("todayMonth").onclick = function(){
+    state.monthDate = new Date();
+    render();
+  };
+  document.querySelectorAll(".week-line").forEach(function(el){
+    el.onclick = function(){
+      state.weekMonday = getMonday(new Date(el.dataset.monday));
+      state.tab = "semaine";
+      render();
+    };
+  });
+}
+
+/* ============ RENDER: HISTORIQUE ============ */
+function renderHistorique(){
+  var monthsMap = {}; // mk -> {date, prevu, effectif, montant}
+  Object.keys(data.weeks).forEach(function(wk){
+    var w = data.weeks[wk];
+    var hasData = w.isVacation || Object.keys(w.days).some(function(dk){
+      var d = w.days[dk];
+      return (d.debut && d.fin) || d.prevu;
+    });
+    if(!hasData) return;
+    // retrouver le lundi à partir d'un jour connu, ou approx depuis la clé iso (simplifié: on prend le premier jour connu)
+    var dayKeys = Object.keys(w.days);
+    var monday = dayKeys.length ? getMonday(new Date(dayKeys[0])) : null;
+    if(!monday) return;
+    var mk = monthKeyForWeek(monday);
+    var t = weekTotals(wk, monday);
+    if(!monthsMap[mk]) monthsMap[mk] = { date: new Date(monday.getFullYear(), monday.getMonth(), 1), prevu:0, effectif:0, montant:0 };
+    monthsMap[mk].prevu += t.prevu;
+    monthsMap[mk].effectif += t.effectif;
+    monthsMap[mk].montant += t.montant;
+  });
+
+  var keys = Object.keys(monthsMap).sort().reverse();
+  var html = "";
+  if(keys.length===0){
+    html += '<div class="empty"><div class="big-emoji">📋</div>Ton historique apparaîtra ici<br>dès que tu auras rempli une semaine.</div>';
+  } else {
+    keys.forEach(function(mk){
+      var m = monthsMap[mk];
+      html += '<div class="hist-line" data-mk="' + mk + '">';
+      html += '  <div><div class="hmonth">' + MOIS[m.date.getMonth()] + ' ' + m.date.getFullYear() + '</div><div class="hsub">' + hoursLabel(m.effectif) + ' effectuées</div></div>';
+      html += '  <div class="hright"><div class="v mono">' + moneyLabel(m.montant) + '</div></div>';
+      html += '</div>';
+    });
+  }
+  document.getElementById("main").innerHTML = html;
+  document.querySelectorAll(".hist-line").forEach(function(el){
+    el.onclick = function(){
+      var mk = el.dataset.mk;
+      var parts = mk.split("-");
+      state.monthDate = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, 1);
+      state.tab = "mois";
+      render();
+    };
+  });
+}
+
+/* ============ RENDER: REGLAGES ============ */
+function renderReglages(){
+  var s = data.settings;
+  var html = "";
+  html += '<div class="settings-group"><h3>Rémunération</h3>';
+  html += '  <div class="settings-row"><label>Taux horaire</label><input type="number" step="0.01" min="0" id="setRate" value="' + s.rate + '"></div>';
+  html += '  <div class="settings-row"><label>Devise</label><input type="text" class="wide" id="setCurrency" value="' + escapeHtml(s.currency) + '" maxlength="4"></div>';
+  html += '</div>';
+
+  html += '<div class="settings-group"><h3>Vacances</h3>';
+  html += '  <div class="settings-row"><label>Heures / jour travaillé</label><input type="number" step="0.0834" min="0" id="setVacHours" value="' + round2(s.vacationHoursPerDay) + '"></div>';
+  html += '  <div class="settings-row"><label>Jours travaillés / semaine</label><input type="number" step="1" min="1" max="7" id="setVacDays" value="' + s.workDaysPerWeek + '"></div>';
+  html += '  <div class="hint">Une semaine cochée « vacances » vaut automatiquement ' + hoursLabel(s.vacationHoursPerDay) + ' × ' + s.workDaysPerWeek + ' j. = <b class="mono">' + hoursLabel((s.vacationHoursPerDay||0)*(s.workDaysPerWeek||0)) + '</b>.</div>';
+  html += '</div>';
+
+  html += '<div class="settings-group"><h3>Noms des catégories</h3>';
+  html += '  <div class="settings-row"><label style="flex:0 0 auto;">Prévisionnel</label><input type="text" class="wide" id="labelPrevu" value="' + escapeHtml(s.labels.prevu) + '"></div>';
+  html += '  <div class="settings-row"><label style="flex:0 0 auto;">Effectuées</label><input type="text" class="wide" id="labelEffectif" value="' + escapeHtml(s.labels.effectif) + '"></div>';
+  html += '  <div class="settings-row"><label style="flex:0 0 auto;">Montant</label><input type="text" class="wide" id="labelMontant" value="' + escapeHtml(s.labels.montant) + '"></div>';
+  html += '</div>';
+
+  html += '<div class="settings-group"><h3>Données</h3>';
+  html += '  <button class="btn" id="btnExport">Exporter mes données (JSON)</button>';
+  html += '  <button class="btn danger" id="btnReset">Réinitialiser toutes les données</button>';
+  html += '  <div class="hint">Toutes les données restent uniquement sur cet iPhone (aucun serveur).</div>';
+  html += '</div>';
+
+  document.getElementById("main").innerHTML = html;
+
+  function bindNum(id, cb){ document.getElementById(id).onchange = function(e){ cb(Number(e.target.value)); saveData(); }; }
+  function bindText(id, cb){ document.getElementById(id).onchange = function(e){ cb(e.target.value); saveData(); }; }
+
+  bindNum("setRate", function(v){ s.rate = v; });
+  bindText("setCurrency", function(v){ s.currency = v || "€"; });
+  bindNum("setVacHours", function(v){ s.vacationHoursPerDay = v; });
+  bindNum("setVacDays", function(v){ s.workDaysPerWeek = v; });
+  bindText("labelPrevu", function(v){ s.labels.prevu = v || "Heures prévisionnelles"; });
+  bindText("labelEffectif", function(v){ s.labels.effectif = v || "Heures effectuées"; });
+  bindText("labelMontant", function(v){ s.labels.montant = v || "Montant"; });
+
+  document.getElementById("btnExport").onclick = function(){
+    var blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = "pointage-export.json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  document.getElementById("btnReset").onclick = function(){
+    if(confirm("Supprimer définitivement toutes les heures enregistrées ? Cette action est irréversible.")){
+      data = defaultData();
+      saveData();
+      render();
+    }
+  };
+}
+
+/* ============ HELPERS UI ============ */
+function navRow(title, sub, prevId, nextId, todayId){
+  var html = '<div class="nav-row">';
+  html += '  <button class="arrow" id="' + prevId + '">‹</button>';
+  html += '  <div class="nav-center"><div class="big">' + title + '</div>';
+  if(sub) html += '<div class="small mono">' + sub + '</div>';
+  html += '  <button class="today-link" id="' + todayId + '">aujourd\'hui</button>';
+  html += '  </div>';
+  html += '  <button class="arrow" id="' + nextId + '">›</button>';
+  html += '</div>';
+  return html;
+}
+
+function odoRow(groups){
+  var html = '<div class="odo-row">';
+  groups.forEach(function(g){
+    html += '<div class="odo-group ' + g.cls + '"><div class="glabel">' + g.label + '</div><div class="odo-digits">';
+    String(g.value).split("").forEach(function(ch){
+      if(ch===" "){ return; }
+      var isSep = !/[0-9]/.test(ch);
+      html += '<div class="odo-digit' + (isSep?" sep":"") + '">' + ch + '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function escapeHtml(str){
+  return String(str==null?"":str)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function capitalize(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function round2(n){ return Math.round(Number(n)*100)/100; }
+
+/* ============ RENDER MASTER ============ */
+function render(){
+  renderTabs();
+  if(state.tab==="semaine") renderSemaine();
+  else if(state.tab==="mois") renderMois();
+  else if(state.tab==="historique") renderHistorique();
+  else if(state.tab==="reglages") renderReglages();
+}
+
+render();
+})();
+</script>
+</body>
+</html>
